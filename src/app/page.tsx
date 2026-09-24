@@ -1,194 +1,171 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useChatWidget } from "@/components/chat/ChatWidgetContext";
 
-type ChatMessage = {
-  role: "customer" | "advisor";
-  content: string;
-};
+const services = [
+  {
+    flag: "🇬🇧",
+    country: "United Kingdom",
+    name: "UK Tourist Visa",
+    initial: "USD 200",
+    remaining: "USD 2,000",
+    note: "Due only after visa approval",
+  },
+  {
+    flag: "🇨🇦",
+    country: "Canada",
+    name: "Canada Tourist Visa",
+    initial: "USD 200",
+    remaining: "USD 3,000",
+    note: "Due only after visa approval",
+  },
+  {
+    flag: "🇦🇪",
+    country: "United Arab Emirates",
+    name: "UAE Tourist Visa",
+    initial: "USD 200",
+    remaining: "USD 500",
+    note: "Due only after approval",
+  },
+];
 
-// Minimal markdown: renders **bold** segments only, nothing else. Keeps the
-// chat lean without pulling in a full markdown parser dependency.
-function renderWithBold(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
+const steps = [
+  {
+    title: "Chat with an advisor",
+    body: "Tell us about your trip - destination, timeline, and background. No forms, just a conversation.",
+  },
+  {
+    title: "Get assessed",
+    body: "We review your profile against what's typically needed and let you know where you stand.",
+  },
+  {
+    title: "Start with USD 200",
+    body: "A small initial payment activates your application and document-processing workflow.",
+  },
+  {
+    title: "Pay the rest after approval",
+    body: "The remaining service fee is only due once your visa is approved - never before.",
+  },
+];
 
-function getSessionToken(): string {
-  const key = "pav_session_token";
-  let token = window.localStorage.getItem(key);
-  if (!token) {
-    token = crypto.randomUUID();
-    window.localStorage.setItem(key, token);
-  }
-  return token;
-}
-
-export default function ChatPage() {
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const token = getSessionToken();
-    setSessionToken(token);
-
-    fetch(`/api/conversation?sessionToken=${encodeURIComponent(token)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.messages?.length) {
-          setChatMessages(
-            data.messages
-              .filter((m: { role: string }) => m.role === "customer" || m.role === "advisor")
-              .map((m: { role: string; content: string }) => ({
-                role: m.role,
-                content: m.content,
-              })),
-          );
-        } else {
-          setChatMessages([
-            {
-              role: "advisor",
-              content:
-                "Hi! I'm here to help with your travel or study abroad plans. What are you thinking about - where would you like to go, and what's the occasion?",
-            },
-          ]);
-        }
-      });
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, loading]);
-
-  async function sendMessage() {
-    if (!input.trim() || !sessionToken || loading) return;
-    const userMessage = input.trim();
-    setInput("");
-    setChatMessages((prev) => [...prev, { role: "customer", content: userMessage }]);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/conversation", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sessionToken, message: userMessage }),
-      });
-      const data = await res.json();
-      setChatMessages((prev) => [...prev, { role: "advisor", content: data.reply }]);
-    } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "advisor", content: "Sorry, something went wrong. Please try again." },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }
+export default function HomePage() {
+  const { open } = useChatWidget();
 
   return (
-    <div className="mx-auto flex h-screen max-w-2xl flex-col">
-      <header className="flex items-center gap-3 border-b border-[var(--border)]/80 bg-[var(--surface)]/70 px-5 py-4 backdrop-blur-sm">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--accent))" }}
-        >
-          PV
-        </div>
-        <div>
-          <h1 className="text-base font-semibold text-[var(--foreground)]">
-            PayAfterVisa Advisor
-          </h1>
-          <p className="text-xs text-neutral-500">Ask about visas, timelines & costs</p>
-        </div>
-      </header>
-
-      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
-        {chatMessages.map((m, i) => (
+    <div className="min-h-screen">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
+        <div className="flex items-center gap-2.5">
           <div
-            key={i}
-            className={`flex animate-message-in ${
-              m.role === "customer" ? "justify-end" : "justify-start"
-            }`}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm"
+            style={{ background: "linear-gradient(135deg, var(--brand), var(--accent))" }}
           >
-            <div
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
-                m.role === "customer"
-                  ? "rounded-br-sm text-white"
-                  : "rounded-bl-sm border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
-              }`}
-              style={
-                m.role === "customer"
-                  ? { background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" }
-                  : undefined
-              }
-            >
-              {renderWithBold(m.content)}
-            </div>
+            PV
           </div>
-        ))}
-        {loading && (
-          <div className="flex animate-message-in justify-start">
-            <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
-              <span
-                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
-                style={{ animationDelay: "0s" }}
-              />
-              <span
-                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
-                style={{ animationDelay: "0.15s" }}
-              />
-              <span
-                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
-                style={{ animationDelay: "0.3s" }}
-              />
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      <div className="border-t border-[var(--border)] bg-[var(--surface)]/70 px-3.5 pt-2 backdrop-blur-sm">
-        <form
-          className="flex gap-2 pb-3.5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendMessage();
-          }}
+          <span className="text-sm font-semibold text-[var(--foreground)]">PayAfterVisa</span>
+        </div>
+        <button
+          onClick={open}
+          className="rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform active:scale-95"
+          style={{ background: "var(--brand)" }}
         >
-          <textarea
-            rows={1}
-            className="max-h-32 flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--foreground)] outline-none transition-shadow focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(42,61,143,0.15)]"
-            placeholder="Type a message…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            disabled={loading}
-          />
+          Chat with an advisor
+        </button>
+      </nav>
+
+      <section className="mx-auto max-w-3xl px-5 pb-16 pt-10 text-center sm:pt-16">
+        <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)] sm:text-5xl">
+          Get visa-ready without paying everything upfront.
+        </h1>
+        <p className="mx-auto mt-5 max-w-xl text-[15px] text-neutral-600 sm:text-base">
+          PayAfterVisa helps you apply for tourist visas to the UK, Canada, and UAE with a small
+          activation fee - the rest is only due once your visa is approved.
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
-            type="submit"
-            className="rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: "var(--accent)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
-            disabled={loading || !input.trim()}
+            onClick={open}
+            className="rounded-full px-6 py-3 text-sm font-semibold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-95"
+            style={{ background: "linear-gradient(135deg, var(--brand), var(--accent))" }}
           >
-            Send
+            Talk to our advisor
           </button>
-        </form>
-      </div>
+          <a
+            href="#services"
+            className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-neutral-50"
+          >
+            See services & pricing
+          </a>
+        </div>
+      </section>
+
+      <section id="services" className="mx-auto max-w-6xl px-5 py-14">
+        <h2 className="mb-2 text-center text-2xl font-bold text-[var(--foreground)]">
+          Where would you like to go?
+        </h2>
+        <p className="mb-10 text-center text-sm text-neutral-500">
+          Pricing for our tourist visa assistance services
+        </p>
+        <div className="grid gap-5 sm:grid-cols-3">
+          {services.map((s) => (
+            <div
+              key={s.name}
+              className="flex flex-col rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="mb-3 text-3xl">{s.flag}</div>
+              <h3 className="text-base font-semibold text-[var(--foreground)]">{s.name}</h3>
+              <p className="mb-4 text-xs text-neutral-500">{s.country}</p>
+              <div className="mb-1">
+                <span className="text-2xl font-bold text-[var(--brand)]">{s.initial}</span>
+                <span className="ml-1.5 text-xs text-neutral-500">to start</span>
+              </div>
+              <p className="mb-5 text-xs text-neutral-500">
+                + {s.remaining} · {s.note}
+              </p>
+              <button
+                onClick={open}
+                className="mt-auto rounded-full border border-[var(--border)] py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-neutral-50"
+              >
+                Ask about this
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="mx-auto mt-6 max-w-xl text-center text-xs text-neutral-400">
+          The initial payment activates your application - it does not guarantee visa approval.
+          Final decisions are made solely by the relevant immigration authority.
+        </p>
+      </section>
+
+      <section className="bg-[var(--background-alt)] py-14">
+        <div className="mx-auto max-w-5xl px-5">
+          <h2 className="mb-10 text-center text-2xl font-bold text-[var(--foreground)]">
+            How it works
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map((step, i) => (
+              <div key={step.title} className="rounded-2xl bg-[var(--surface)] p-5 shadow-sm">
+                <div
+                  className="mb-3 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{ background: "var(--accent)" }}
+                >
+                  {i + 1}
+                </div>
+                <h3 className="mb-1.5 text-sm font-semibold text-[var(--foreground)]">
+                  {step.title}
+                </h3>
+                <p className="text-xs leading-relaxed text-neutral-500">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="mx-auto max-w-6xl px-5 py-8 text-center text-xs text-neutral-400">
+        <p>PayAfterVisa is an online platform providing visa-related application assistance.</p>
+        <Link href="/admin" className="mt-2 inline-block text-neutral-300 hover:text-neutral-500">
+          Team login
+        </Link>
+      </footer>
     </div>
   );
 }
