@@ -14,9 +14,8 @@ export async function runConversationTurn(
   customerId: string,
   history: Anthropic.MessageParam[],
   latestUserMessage: string,
-  systemPromise: Promise<string>,
 ): Promise<ChatTurnResult> {
-  const system = await systemPromise;
+  const systemText = await buildSystemPrompt();
 
   const messages: Anthropic.MessageParam[] = [
     ...history,
@@ -36,7 +35,12 @@ export async function runConversationTurn(
       // deep reasoning - keeps latency and cost down without hurting
       // response quality here.
       output_config: { effort: "low" },
-      system,
+      // Cached: this text is byte-identical across every call, for every
+      // customer, so after the first write subsequent calls pay roughly
+      // 10% of normal input-token price for this block.
+      system: [
+        { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+      ],
       tools: [createLeadTool],
       messages,
     });
@@ -46,6 +50,8 @@ export async function runConversationTurn(
       model: CONVERSATION_MODEL,
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
+      cacheCreationTokens: response.usage.cache_creation_input_tokens ?? undefined,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? undefined,
       purpose: "conversation",
     });
 

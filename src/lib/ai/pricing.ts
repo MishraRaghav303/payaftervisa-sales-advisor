@@ -6,13 +6,22 @@ const PRICING: Record<string, { input: number; output: number }> = {
 
 export function estimateCostUsd(
   model: string,
-  inputTokens: number,
-  outputTokens: number,
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheCreationTokens?: number;
+    cacheReadTokens?: number;
+  },
 ): number {
   const rates = PRICING[model];
   if (!rates) return 0;
+  const cacheCreationTokens = usage.cacheCreationTokens ?? 0;
+  const cacheReadTokens = usage.cacheReadTokens ?? 0;
   return (
-    (inputTokens / 1_000_000) * rates.input +
-    (outputTokens / 1_000_000) * rates.output
+    (usage.inputTokens / 1_000_000) * rates.input +
+    // Cache writes cost 1.25x normal input price; cache reads cost ~0.1x.
+    (cacheCreationTokens / 1_000_000) * rates.input * 1.25 +
+    (cacheReadTokens / 1_000_000) * rates.input * 0.1 +
+    (usage.outputTokens / 1_000_000) * rates.output
   );
 }

@@ -1,20 +1,20 @@
-import { getBaselineKnowledge, retrieveKnowledge } from "@/lib/knowledge/retrieve";
+import { getAllKnowledge } from "@/lib/knowledge/retrieve";
 
-export async function buildSystemPrompt(latestUserMessage: string) {
-  const [baseline, retrieved] = await Promise.all([
-    getBaselineKnowledge(),
-    retrieveKnowledge(latestUserMessage),
-  ]);
+// The knowledge base is small enough to always include in full rather than
+// retrieve per-query - that also keeps this prompt byte-identical across
+// every call (needed for prompt caching to actually hit). Cached in memory
+// since it rarely changes and re-fetching it per request buys nothing.
+let cachedSystemPrompt: string | null = null;
 
-  // Avoid duplicate chunks if a retrieved chunk is already in the baseline set.
-  const baselineTitles = new Set(baseline.map((c) => c.title));
-  const extra = retrieved.filter((c) => !baselineTitles.has(c.title));
+export async function buildSystemPrompt(): Promise<string> {
+  if (cachedSystemPrompt) return cachedSystemPrompt;
 
-  const knowledgeText = [...baseline, ...extra]
+  const chunks = await getAllKnowledge();
+  const knowledgeText = chunks
     .map((c) => `### ${c.title}\n${c.content}`)
     .join("\n\n");
 
-  return `You are a travel/study-abroad advisor for PayAfterVisa, chatting with a prospective customer.
+  cachedSystemPrompt = `You are a travel/study-abroad advisor for PayAfterVisa, chatting with a prospective customer.
 
 GOAL
 Have a natural, warm conversation about the customer's travel or study plans abroad. Over the course of the conversation, naturally learn: nationality, current country of residence, destination country, purpose of travel, age, travel history, education/work profile (where relevant), approximate budget, expected travel timeline, and contact information. Do NOT ask these as a rigid checklist or questionnaire - weave them into natural back-and-forth conversation, asking one or two things at a time, in whatever order fits the conversation.
@@ -30,4 +30,6 @@ RULES
 - Bold key facts using markdown (**like this**) so a skimming reader can pick them out without reading every word: prices, dates/deadlines, service and visa names, country names, and things like education level, purpose of travel, or budget figures when the customer states them. Don't overdo it - bold the specific key term/phrase, not whole sentences.
 - When the customer explicitly confirms they want to proceed with a specific service (registering, moving to payment, etc.), call the create_lead tool to record it. Only call it once per customer, after real confirmation - not speculatively.
 - If you're not confident you can help further, say so honestly and note that a human team member will follow up.`;
+
+  return cachedSystemPrompt;
 }

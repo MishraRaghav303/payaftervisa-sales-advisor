@@ -5,7 +5,6 @@ import { db } from "@/lib/db/client";
 import { customers, messages, profiles, leads } from "@/lib/db/schema";
 import { runConversationTurn } from "@/lib/ai/chat";
 import { extractProfile } from "@/lib/ai/extract";
-import { buildSystemPrompt } from "@/lib/ai/systemPrompt";
 
 async function getOrCreateCustomer(sessionToken: string) {
   const existing = await db
@@ -73,11 +72,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Knowledge retrieval only depends on the message text, not the customer
-  // record - kick it off immediately so it overlaps with the customer/
-  // history lookups instead of waiting behind them.
-  const systemPromise = buildSystemPrompt(message);
-
   const customer = await getOrCreateCustomer(sessionToken);
 
   const priorMessages = await db
@@ -97,7 +91,6 @@ export async function POST(req: NextRequest) {
     customer.id,
     history,
     message,
-    systemPromise,
   );
 
   await db.insert(messages).values([
