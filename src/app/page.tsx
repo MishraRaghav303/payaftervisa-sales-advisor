@@ -54,7 +54,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  }, [chatMessages, loading]);
 
   async function sendMessage() {
     if (!input.trim() || !sessionToken || loading) return;
@@ -83,32 +83,60 @@ export default function ChatPage() {
 
   return (
     <div className="mx-auto flex h-screen max-w-2xl flex-col">
-      <header className="border-b border-neutral-200 px-4 py-3">
-        <h1 className="text-lg font-semibold">PayAfterVisa Advisor</h1>
-        <p className="text-sm text-neutral-500">Chat about your travel or study plans</p>
+      <header className="flex items-center gap-3 border-b border-[var(--border)]/80 bg-[var(--surface)]/70 px-5 py-4 backdrop-blur-sm">
+        <div
+          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm"
+          style={{ background: "linear-gradient(135deg, var(--brand), var(--accent))" }}
+        >
+          PV
+        </div>
+        <div>
+          <h1 className="text-base font-semibold text-[var(--foreground)]">
+            PayAfterVisa Advisor
+          </h1>
+          <p className="text-xs text-neutral-500">Ask about visas, timelines & costs</p>
+        </div>
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
         {chatMessages.map((m, i) => (
           <div
             key={i}
-            className={`flex ${m.role === "customer" ? "justify-end" : "justify-start"}`}
+            className={`flex animate-message-in ${
+              m.role === "customer" ? "justify-end" : "justify-start"
+            }`}
           >
             <div
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
                 m.role === "customer"
-                  ? "bg-neutral-900 text-white"
-                  : "bg-white text-neutral-900 shadow-sm"
+                  ? "rounded-br-sm text-white"
+                  : "rounded-bl-sm border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
               }`}
+              style={
+                m.role === "customer"
+                  ? { background: "linear-gradient(135deg, var(--brand), var(--brand-dark))" }
+                  : undefined
+              }
             >
               {m.content}
             </div>
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-white px-4 py-2 text-sm text-neutral-400 shadow-sm">
-              Typing…
+          <div className="flex animate-message-in justify-start">
+            <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
+              <span
+                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
+                style={{ animationDelay: "0s" }}
+              />
+              <span
+                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
+                style={{ animationDelay: "0.15s" }}
+              />
+              <span
+                className="typing-dot h-1.5 w-1.5 rounded-full bg-neutral-400"
+                style={{ animationDelay: "0.3s" }}
+              />
             </div>
           </div>
         )}
@@ -116,14 +144,14 @@ export default function ChatPage() {
       </div>
 
       <form
-        className="flex gap-2 border-t border-neutral-200 p-3"
+        className="flex gap-2 border-t border-[var(--border)] bg-[var(--surface)]/70 p-3.5 backdrop-blur-sm"
         onSubmit={(e) => {
           e.preventDefault();
           sendMessage();
         }}
       >
         <input
-          className="flex-1 rounded-full border border-neutral-300 px-4 py-2 text-sm outline-none focus:border-neutral-500"
+          className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--foreground)] outline-none transition-shadow focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(42,61,143,0.15)]"
           placeholder="Type a message…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -131,7 +159,10 @@ export default function ChatPage() {
         />
         <button
           type="submit"
-          className="rounded-full bg-neutral-900 px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: "var(--accent)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
           disabled={loading || !input.trim()}
         >
           Send
