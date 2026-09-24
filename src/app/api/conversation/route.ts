@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { eq, asc } from "drizzle-orm";
 import type Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db/client";
 import { customers, messages, profiles, leads } from "@/lib/db/schema";
 import { runConversationTurn } from "@/lib/ai/chat";
 import { extractProfile } from "@/lib/ai/extract";
+import { buildSystemPrompt } from "@/lib/ai/systemPrompt";
 
 async function getOrCreateCustomer(sessionToken: string) {
   const existing = await db
@@ -72,6 +73,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Knowledge retrieval only depends on the message text, not the customer
+  // record - kick it off immediately so it overlaps with the customer/
+  // history lookups instead of waiting behind them.
+  const systemPromise = buildSystemPrompt(message);
+
   const customer = await getOrCreateCustomer(sessionToken);
 
   const priorMessages = await db
@@ -91,6 +97,7 @@ export async function POST(req: NextRequest) {
     customer.id,
     history,
     message,
+    systemPromise,
   );
 
   await db.insert(messages).values([
@@ -98,32 +105,21 @@ export async function POST(req: NextRequest) {
     { customerId: customer.id, role: "advisor", content: replyText },
   ]);
 
-  const fullTranscript = [
-    ...priorMessages.map((m) => ({ role: m.role, content: m.content })),
-    { role: "customer", content: message },
-    { role: "advisor", content: replyText },
-  ];
+  // Structured extraction is not needed for the customer-facing reply - run
+  // it after the response is sent so it doesn't add to perceived latency.
+  after(async () => {
+    const fullTranscript = [
+      ...priorMessages.map((m) => ({ role: m.role, content: m.content })),
+      { role: "customer", content: message },
+      { role: "advisor", content: replyText },
+    ];
 
-  const extraction = await extractProfile(customer.id, fullTranscript);
+    const extraction = await extractProfile(customer.id, fullTranscript);
 
-  await db
-    .insert(profiles)
-    .values({
-      customerId: customer.id,
-      nationality: extraction.nationality,
-      residenceCountry: extraction.residenceCountry,
-      destinationCountry: extraction.destinationCountry,
-      purpose: extraction.purpose,
-      age: extraction.age,
-      travelHistory: extraction.travelHistory,
-      educationWorkProfile: extraction.educationWorkProfile,
-      approxBudget: extraction.approxBudget,
-      travelTimeline: extraction.travelTimeline,
-      raw: extraction,
-    })
-    .onConflictDoUpdate({
-      target: profiles.customerId,
-      set: {
+    await db
+      .insert(profiles)
+      .values({
+        customerId: customer.id,
         nationality: extraction.nationality,
         residenceCountry: extraction.residenceCountry,
         destinationCountry: extraction.destinationCountry,
@@ -134,26 +130,40 @@ export async function POST(req: NextRequest) {
         approxBudget: extraction.approxBudget,
         travelTimeline: extraction.travelTimeline,
         raw: extraction,
-        updatedAt: new Date(),
-      },
-    });
-
-  if (extraction.name || extraction.email || extraction.phone) {
-    await db
-      .update(customers)
-      .set({
-        name: extraction.name ?? customer.name,
-        email: extraction.email ?? customer.email,
-        phone: extraction.phone ?? customer.phone,
-        updatedAt: new Date(),
       })
-      .where(eq(customers.id, customer.id));
-  }
+      .onConflictDoUpdate({
+        target: profiles.customerId,
+        set: {
+          nationality: extraction.nationality,
+          residenceCountry: extraction.residenceCountry,
+          destinationCountry: extraction.destinationCountry,
+          purpose: extraction.purpose,
+          age: extraction.age,
+          travelHistory: extraction.travelHistory,
+          educationWorkProfile: extraction.educationWorkProfile,
+          approxBudget: extraction.approxBudget,
+          travelTimeline: extraction.travelTimeline,
+          raw: extraction,
+          updatedAt: new Date(),
+        },
+      });
+
+    if (extraction.name || extraction.email || extraction.phone) {
+      await db
+        .update(customers)
+        .set({
+          name: extraction.name ?? customer.name,
+          email: extraction.email ?? customer.email,
+          phone: extraction.phone ?? customer.phone,
+          updatedAt: new Date(),
+        })
+        .where(eq(customers.id, customer.id));
+    }
+  });
 
   return NextResponse.json({
     reply: replyText,
     leadCreated,
     sessionToken,
-    profile: extraction,
   });
 }

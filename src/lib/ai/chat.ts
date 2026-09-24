@@ -14,8 +14,9 @@ export async function runConversationTurn(
   customerId: string,
   history: Anthropic.MessageParam[],
   latestUserMessage: string,
+  systemPromise: Promise<string>,
 ): Promise<ChatTurnResult> {
-  const system = await buildSystemPrompt(latestUserMessage);
+  const system = await systemPromise;
 
   const messages: Anthropic.MessageParam[] = [
     ...history,
@@ -31,6 +32,10 @@ export async function runConversationTurn(
     const response = await anthropic.messages.create({
       model: CONVERSATION_MODEL,
       max_tokens: 1024,
+      // Low effort: this is a straightforward conversational task, not
+      // deep reasoning - keeps latency and cost down without hurting
+      // response quality here.
+      output_config: { effort: "low" },
       system,
       tools: [createLeadTool],
       messages,

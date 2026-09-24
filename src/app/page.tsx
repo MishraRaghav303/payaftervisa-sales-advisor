@@ -7,6 +7,18 @@ type ChatMessage = {
   content: string;
 };
 
+// Minimal markdown: renders **bold** segments only, nothing else. Keeps the
+// chat lean without pulling in a full markdown parser dependency.
+function renderWithBold(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 function getSessionToken(): string {
   const key = "pav_session_token";
   let token = window.localStorage.getItem(key);
@@ -118,7 +130,7 @@ export default function ChatPage() {
                   : undefined
               }
             >
-              {m.content}
+              {renderWithBold(m.content)}
             </div>
           </div>
         ))}
