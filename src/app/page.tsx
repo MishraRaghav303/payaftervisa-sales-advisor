@@ -155,31 +155,43 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <form
-        className="flex gap-2 border-t border-[var(--border)] bg-[var(--surface)]/70 p-3.5 backdrop-blur-sm"
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-      >
-        <input
-          className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--foreground)] outline-none transition-shadow focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(42,61,143,0.15)]"
-          placeholder="Type a message…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button
-          type="submit"
-          className="rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: "var(--accent)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
-          disabled={loading || !input.trim()}
+      <div className="border-t border-[var(--border)] bg-[var(--surface)]/70 px-3.5 pt-2 backdrop-blur-sm">
+        <p className="px-1 pb-1 text-[11px] text-neutral-400">
+          Press Enter to send · Shift + Enter for a new line
+        </p>
+        <form
+          className="flex gap-2 pb-3.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage();
+          }}
         >
-          Send
-        </button>
-      </form>
+          <textarea
+            rows={1}
+            className="max-h-32 flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--foreground)] outline-none transition-shadow focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(42,61,143,0.15)]"
+            placeholder="Type a message…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            className="rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: "var(--accent)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
+            disabled={loading || !input.trim()}
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
