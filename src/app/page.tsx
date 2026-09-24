@@ -156,9 +156,6 @@ export default function ChatPage() {
       </div>
 
       <div className="border-t border-[var(--border)] bg-[var(--surface)]/70 px-3.5 pt-2 backdrop-blur-sm">
-        <p className="px-1 pb-1 text-[11px] text-neutral-400">
-          Press Enter to send · Shift + Enter for a new line
-        </p>
         <form
           className="flex gap-2 pb-3.5"
           onSubmit={(e) => {
