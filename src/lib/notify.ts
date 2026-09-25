@@ -44,13 +44,15 @@ export async function alertHotLead(params: {
   if (!resend || !ALERT_EMAIL) return;
 
   try {
-    const { error } = await resend.emails.send({
+    console.log("[notify] sending hot lead alert to", ALERT_EMAIL);
+    const { data, error } = await resend.emails.send({
       from: FROM,
       to: ALERT_EMAIL,
       subject: `🔥 Hot lead: ${params.customerName ?? "New customer"} — ${params.serviceType}`,
       text: `A hot lead just came in.\n\nCustomer: ${params.customerName ?? "(name not yet given)"}\nService: ${params.serviceType}\n\nSummary: ${params.summary}\n\nView full details in /admin.`,
     });
     if (error) console.error("[notify] alertHotLead send failed:", error);
+    else console.log("[notify] alertHotLead sent, id:", data?.id);
   } catch (err) {
     console.error("[notify] alertHotLead threw:", err);
   }
