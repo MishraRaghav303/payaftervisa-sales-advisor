@@ -4,10 +4,12 @@ import { buildSystemPrompt } from "./systemPrompt";
 import { createLeadTool } from "./tools";
 import { logUsage } from "./usage";
 import { createLead } from "@/lib/leads/createLead";
+import type { leads as leadsTable } from "@/lib/db/schema";
 
 export type ChatTurnResult = {
   replyText: string;
   leadCreated: boolean;
+  lead: typeof leadsTable.$inferSelect | null;
 };
 
 export async function runConversationTurn(
@@ -24,6 +26,7 @@ export async function runConversationTurn(
 
   let leadCreated = false;
   let replyText = "";
+  let createdLead: typeof leadsTable.$inferSelect | null = null;
 
   // Small bounded loop: in practice this resolves in 1-2 iterations (a
   // reply, or a single create_lead tool call followed by a reply).
@@ -83,7 +86,7 @@ export async function runConversationTurn(
           humanInterventionRequired: boolean;
           summary: string;
         };
-        await createLead({ customerId, ...input });
+        createdLead = await createLead({ customerId, ...input });
         leadCreated = true;
         toolResults.push({
           type: "tool_result",
@@ -96,5 +99,5 @@ export async function runConversationTurn(
     messages.push({ role: "user", content: toolResults });
   }
 
-  return { replyText, leadCreated };
+  return { replyText, leadCreated, lead: createdLead };
 }

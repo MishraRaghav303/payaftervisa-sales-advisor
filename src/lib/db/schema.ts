@@ -90,6 +90,19 @@ export const usageLogs = pgTable("usage_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Errors from the conversation API, surfaced in the admin panel and
+// emailed to the team.
+export const errorLogs = pgTable("error_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: text("source").notNull(), // e.g. "conversation_api"
+  message: text("message").notNull(),
+  stack: text("stack"),
+  customerId: uuid("customer_id").references(() => customers.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Knowledge base chunks with embeddings for retrieval (RAG).
 export const knowledgeChunks = pgTable("knowledge_chunks", {
   id: uuid("id").primaryKey().defaultRandom(),

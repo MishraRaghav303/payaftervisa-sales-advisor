@@ -108,7 +108,10 @@ export default function ChatWidget() {
         body: JSON.stringify({ sessionToken, message: userMessage }),
       });
       const data = await res.json();
-      setChatMessages((prev) => [...prev, { role: "advisor", content: data.reply }]);
+      const replyText = res.ok
+        ? data.reply
+        : (data.error ?? "Sorry, something went wrong. Please try again.");
+      setChatMessages((prev) => [...prev, { role: "advisor", content: replyText }]);
     } catch {
       setChatMessages((prev) => [
         ...prev,

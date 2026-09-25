@@ -22,16 +22,28 @@ type Detail = {
   totalCostUsd: number;
 };
 
+type ErrorRow = { id: string; source: string; message: string; createdAt: string };
+
 export default function AdminPage() {
   const [rows, setRows] = useState<CustomerRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [errors, setErrors] = useState<ErrorRow[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/conversations")
       .then((r) => r.json())
       .then((data) => setRows(data.customers ?? []));
+    fetch("/api/admin/errors")
+      .then((r) => r.json())
+      .then((data) => setErrors(data.errors ?? []));
   }, []);
+
+  const recentErrors = errors.filter(
+    (e) => Date.now() - new Date(e.createdAt).getTime() < 24 * 60 * 60 * 1000,
+  );
+  const hotLeadCount = rows.filter((r) => r.leadStatus === "hot").length;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -41,7 +53,35 @@ export default function AdminPage() {
   }, [selectedId]);
 
   return (
-    <div className="flex h-screen font-sans text-sm">
+    <div className="flex h-screen flex-col font-sans text-sm">
+      {(recentErrors.length > 0 || hotLeadCount > 0) && (
+        <div className="flex items-center gap-4 border-b border-neutral-200 bg-neutral-900 px-4 py-2 text-xs text-white">
+          {hotLeadCount > 0 && (
+            <span>🔥 {hotLeadCount} hot lead{hotLeadCount > 1 ? "s" : ""}</span>
+          )}
+          {recentErrors.length > 0 && (
+            <button
+              onClick={() => setShowErrors((v) => !v)}
+              className="underline decoration-dotted"
+            >
+              ⚠️ {recentErrors.length} error{recentErrors.length > 1 ? "s" : ""} in the last 24h
+              — {showErrors ? "hide" : "view"}
+            </button>
+          )}
+        </div>
+      )}
+      {showErrors && recentErrors.length > 0 && (
+        <div className="max-h-40 overflow-y-auto border-b border-neutral-200 bg-red-50 px-4 py-2 text-xs">
+          {recentErrors.map((e) => (
+            <div key={e.id} className="border-b border-red-100 py-1 last:border-none">
+              <span className="font-medium">{e.source}</span> —{" "}
+              {new Date(e.createdAt).toLocaleString()}: {e.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
       <div className="w-96 overflow-y-auto border-r border-neutral-200">
         <h1 className="border-b border-neutral-200 px-4 py-3 text-base font-semibold">
           Conversations
@@ -57,7 +97,10 @@ export default function AdminPage() {
             <div className="font-medium">{row.name ?? "Unnamed customer"}</div>
             <div className="text-xs text-neutral-500">
               {row.destinationCountry ?? "no destination yet"} ·{" "}
-              {row.leadStatus ?? "no lead yet"} · ${Number(row.totalCostUsd).toFixed(4)}
+              <span className={row.leadStatus === "hot" ? "font-semibold text-orange-600" : ""}>
+                {row.leadStatus === "hot" ? "🔥 hot" : row.leadStatus ?? "no lead yet"}
+              </span>{" "}
+              · ${Number(row.totalCostUsd).toFixed(4)}
             </div>
           </button>
         ))}
@@ -142,6 +185,7 @@ export default function AdminPage() {
             </section>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
