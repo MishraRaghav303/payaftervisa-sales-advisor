@@ -6,7 +6,10 @@ const FROM = "PayAfterVisa Advisor <onboarding@resend.dev>";
 
 function getClient() {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.error("[notify] RESEND_API_KEY is not set - skipping email");
+    return null;
+  }
   return new Resend(apiKey);
 }
 
@@ -18,14 +21,17 @@ export async function alertError(params: {
   if (!resend || !ALERT_EMAIL) return;
 
   try {
-    await resend.emails.send({
+    // The SDK returns { data, error } rather than throwing on API-level
+    // failures (e.g. sandbox sender restrictions) - both must be checked.
+    const { error } = await resend.emails.send({
       from: FROM,
       to: ALERT_EMAIL,
       subject: `⚠️ Advisor error: ${params.source}`,
       text: `An error occurred in the PayAfterVisa advisor.\n\nSource: ${params.source}\nMessage: ${params.message}\n\nCheck /admin for details.`,
     });
-  } catch {
-    // Don't let a failed notification break the request it's reporting on.
+    if (error) console.error("[notify] alertError send failed:", error);
+  } catch (err) {
+    console.error("[notify] alertError threw:", err);
   }
 }
 
@@ -38,13 +44,14 @@ export async function alertHotLead(params: {
   if (!resend || !ALERT_EMAIL) return;
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM,
       to: ALERT_EMAIL,
       subject: `🔥 Hot lead: ${params.customerName ?? "New customer"} — ${params.serviceType}`,
       text: `A hot lead just came in.\n\nCustomer: ${params.customerName ?? "(name not yet given)"}\nService: ${params.serviceType}\n\nSummary: ${params.summary}\n\nView full details in /admin.`,
     });
-  } catch {
-    // Same - never let a notification failure break the main flow.
+    if (error) console.error("[notify] alertHotLead send failed:", error);
+  } catch (err) {
+    console.error("[notify] alertHotLead threw:", err);
   }
 }
