@@ -50,7 +50,7 @@ const steps = [
 ];
 
 export default function HomePage() {
-  const { open } = useChatWidget();
+  const { open, openWithMessage } = useChatWidget();
 
   return (
     <div className="min-h-screen">
@@ -106,29 +106,42 @@ export default function HomePage() {
           Pricing for our tourist visa assistance services
         </p>
         <div className="grid gap-5 sm:grid-cols-3">
-          {services.map((s) => (
-            <div
-              key={s.name}
-              className="flex flex-col rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-3 text-3xl">{s.flag}</div>
-              <h3 className="text-base font-semibold text-[var(--foreground)]">{s.name}</h3>
-              <p className="mb-4 text-xs text-neutral-500">{s.country}</p>
-              <div className="mb-1">
-                <span className="text-2xl font-bold text-[var(--brand)]">{s.initial}</span>
-                <span className="ml-1.5 text-xs text-neutral-500">to start</span>
-              </div>
-              <p className="mb-5 text-xs text-neutral-500">
-                + {s.remaining} · {s.note}
-              </p>
-              <button
-                onClick={open}
-                className="mt-auto rounded-full border border-[var(--border)] py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-neutral-50"
+          {services.map((s) => {
+            const askAboutThis = () =>
+              openWithMessage(`Tell me about the ${s.name} process`);
+            return (
+              <div
+                key={s.name}
+                onClick={askAboutThis}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") askAboutThis();
+                }}
+                className="flex cursor-pointer flex-col rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm transition-shadow hover:shadow-md"
               >
-                Ask about this
-              </button>
-            </div>
-          ))}
+                <div className="mb-3 text-3xl">{s.flag}</div>
+                <h3 className="text-base font-semibold text-[var(--foreground)]">{s.name}</h3>
+                <p className="mb-4 text-xs text-neutral-500">{s.country}</p>
+                <div className="mb-1">
+                  <span className="text-2xl font-bold text-[var(--brand)]">{s.initial}</span>
+                  <span className="ml-1.5 text-xs text-neutral-500">to start</span>
+                </div>
+                <p className="mb-5 text-xs text-neutral-500">
+                  + {s.remaining} · {s.note}
+                </p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    askAboutThis();
+                  }}
+                  className="mt-auto rounded-full border border-[var(--border)] py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-neutral-50"
+                >
+                  Ask about this
+                </button>
+              </div>
+            );
+          })}
         </div>
         <p className="mx-auto mt-6 max-w-xl text-center text-xs text-neutral-400">
           The initial payment activates your application - it does not guarantee visa approval.

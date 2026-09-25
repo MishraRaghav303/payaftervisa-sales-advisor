@@ -31,7 +31,7 @@ function getSessionToken(): string {
 
 export default function ChatWidget() {
   const pathname = usePathname();
-  const { isOpen, toggle, close } = useChatWidget();
+  const { isOpen, toggle, close, pendingMessage, clearPendingMessage } = useChatWidget();
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -72,9 +72,17 @@ export default function ChatWidget() {
     if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages, loading, isOpen]);
 
-  async function sendMessage() {
-    if (!input.trim() || !sessionToken || loading) return;
-    const userMessage = input.trim();
+  useEffect(() => {
+    if (isOpen && loadedHistory && sessionToken && pendingMessage) {
+      clearPendingMessage();
+      sendMessage(pendingMessage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, loadedHistory, sessionToken, pendingMessage]);
+
+  async function sendMessage(override?: string) {
+    const userMessage = (override ?? input).trim();
+    if (!userMessage || !sessionToken || loading) return;
     setInput("");
     setChatMessages((prev) => [...prev, { role: "customer", content: userMessage }]);
     setLoading(true);

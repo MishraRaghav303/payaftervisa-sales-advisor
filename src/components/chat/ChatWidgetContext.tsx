@@ -7,12 +7,16 @@ type ChatWidgetContextValue = {
   open: () => void;
   close: () => void;
   toggle: () => void;
+  pendingMessage: string | null;
+  openWithMessage: (message: string) => void;
+  clearPendingMessage: () => void;
 };
 
 const ChatWidgetContext = createContext<ChatWidgetContextValue | null>(null);
 
 export function ChatWidgetProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   return (
     <ChatWidgetContext.Provider
@@ -21,6 +25,12 @@ export function ChatWidgetProvider({ children }: { children: ReactNode }) {
         open: () => setIsOpen(true),
         close: () => setIsOpen(false),
         toggle: () => setIsOpen((v) => !v),
+        pendingMessage,
+        openWithMessage: (message: string) => {
+          setPendingMessage(message);
+          setIsOpen(true);
+        },
+        clearPendingMessage: () => setPendingMessage(null),
       }}
     >
       {children}
