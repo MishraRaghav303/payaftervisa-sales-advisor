@@ -103,12 +103,19 @@ export default function ChatWidget() {
   return (
     <>
       <div
-        className={`fixed bottom-24 right-5 z-40 flex w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200 ease-out sm:right-6 ${
-          isOpen
-            ? "translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-4 scale-95 opacity-0"
+        onClick={close}
+        className={`fixed inset-0 z-30 bg-black/30 backdrop-blur-[2px] transition-opacity duration-200 ${
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
-        style={{ height: "min(600px, calc(100vh - 8rem))" }}
+      />
+
+      <div
+        className={`fixed left-1/2 top-1/2 z-40 flex w-[min(560px,calc(100vw-2.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200 ease-out ${
+          isOpen
+            ? "-translate-y-1/2 scale-100 opacity-100"
+            : "pointer-events-none -translate-y-[45%] scale-95 opacity-0"
+        }`}
+        style={{ height: "min(720px, calc(100vh - 5rem))" }}
       >
         <header className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3.5">
           <div
