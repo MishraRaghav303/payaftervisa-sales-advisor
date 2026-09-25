@@ -8,6 +8,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +27,7 @@ function LoginForm() {
       router.push(searchParams.get("next") || "/admin");
       router.refresh();
     } else {
-      setError("Incorrect username or password.");
+      setError("Invalid credentials, try again!");
       setLoading(false);
     }
   }
@@ -47,14 +48,24 @@ function LoginForm() {
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
-      <input
-        type="password"
-        autoComplete="current-password"
-        className="mb-3 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <div className="relative mb-3">
+        <input
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          className="w-full rounded-lg border border-[var(--border)] px-3 py-2 pr-16 text-sm outline-none focus:border-[var(--brand)]"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((v) => !v)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1.5 py-0.5 text-xs font-medium text-neutral-400 hover:text-[var(--brand)]"
+          tabIndex={-1}
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
+      </div>
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       <button
         type="submit"
