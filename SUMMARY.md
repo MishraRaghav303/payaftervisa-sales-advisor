@@ -30,9 +30,10 @@ existing model properly. Claude already knows how to hold a natural
 conversation; what makes it "know" PayAfterVisa is the business info we
 feed it, not something we'd need to train in.
 
-**What it costs to run:** About 3 cents per conversation. So roughly
-$2-4 for every 100 conversations, or $20-40 for every 1,000. It's
-pay-as-you-go, no fixed monthly bill.
+**What it costs to run:** About 3 cents per conversation.
+So roughly $2-4 for every 100 conversations,
+or $20-40 for every 1,000. 
+It's pay-as-you-go, no fixed monthly bill.
 
 **What's not in there yet:** The AI currently only knows about UK, Canada,
 and UAE tourist visas, because that's the only data I was given to test

@@ -80,6 +80,20 @@ export default function ChatWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, loadedHistory, sessionToken, pendingMessage]);
 
+  function startNewChat() {
+    const token = crypto.randomUUID();
+    window.localStorage.setItem("pav_session_token", token);
+    setSessionToken(token);
+    setInput("");
+    setChatMessages([
+      {
+        role: "advisor",
+        content:
+          "Hi! I'm here to help with your travel or study abroad plans. What are you thinking about - where would you like to go, and what's the occasion?",
+      },
+    ]);
+  }
+
   async function sendMessage(override?: string) {
     const userMessage = (override ?? input).trim();
     if (!userMessage || !sessionToken || loading) return;
@@ -138,6 +152,22 @@ export default function ChatWidget() {
             </h2>
             <p className="text-xs text-neutral-500">Usually replies in seconds</p>
           </div>
+          <button
+            onClick={startNewChat}
+            aria-label="Start new chat"
+            title="Start new chat"
+            className="rounded-full p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M4 12a8 8 0 1 0 2.34-5.66M4 4v5h5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
           <button
             onClick={close}
             aria-label="Close chat"
