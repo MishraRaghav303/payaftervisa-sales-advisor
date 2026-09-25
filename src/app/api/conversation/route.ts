@@ -118,15 +118,12 @@ export async function POST(req: NextRequest) {
     // this kind of work on serverless (a plain un-awaited promise isn't
     // guaranteed to finish once the response has gone out).
     after(async () => {
-      console.log("[after] running, lead status:", lead?.status ?? "no lead");
       if (lead?.status === "hot") {
-        console.log("[after] calling alertHotLead");
         await alertHotLead({
           customerName: customer.name,
           serviceType: lead.serviceType ?? "Unknown service",
           summary: lead.summary ?? "",
         });
-        console.log("[after] alertHotLead call finished");
       }
 
       const fullTranscript = [
