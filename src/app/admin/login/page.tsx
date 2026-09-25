@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,14 +19,14 @@ function LoginForm() {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     });
 
     if (res.ok) {
       router.push(searchParams.get("next") || "/admin");
       router.refresh();
     } else {
-      setError("Incorrect password.");
+      setError("Incorrect username or password.");
       setLoading(false);
     }
   }
@@ -38,8 +39,17 @@ function LoginForm() {
       <h1 className="mb-1 text-lg font-semibold text-[var(--foreground)]">Team login</h1>
       <p className="mb-5 text-sm text-neutral-500">Internal access only.</p>
       <input
-        type="password"
+        type="text"
         autoFocus
+        autoComplete="username"
+        className="mb-3 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]"
+        placeholder="Username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        type="password"
+        autoComplete="current-password"
         className="mb-3 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]"
         placeholder="Password"
         value={password}
@@ -48,7 +58,7 @@ function LoginForm() {
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       <button
         type="submit"
-        disabled={loading || !password}
+        disabled={loading || !username || !password}
         className="w-full rounded-lg py-2 text-sm font-medium text-white disabled:opacity-50"
         style={{ background: "var(--brand)" }}
       >

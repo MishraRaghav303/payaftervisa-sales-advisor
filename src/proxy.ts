@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-async function expectedToken(password: string) {
-  const data = new TextEncoder().encode(`pav-admin:${password}`);
+async function expectedToken(username: string, password: string) {
+  const data = new TextEncoder().encode(`pav-admin:${username}:${password}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -16,7 +16,10 @@ export async function proxy(req: NextRequest) {
   }
 
   const cookie = req.cookies.get("admin_session")?.value;
-  const expected = await expectedToken(process.env.ADMIN_PASSWORD ?? "");
+  const expected = await expectedToken(
+    process.env.ADMIN_USERNAME ?? "",
+    process.env.ADMIN_PASSWORD ?? "",
+  );
   const authenticated = Boolean(cookie) && cookie === expected;
 
   if (authenticated) return NextResponse.next();
